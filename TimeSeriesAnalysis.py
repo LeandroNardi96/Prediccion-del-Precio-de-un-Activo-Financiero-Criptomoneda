@@ -32,6 +32,8 @@ import statsmodels.api as sm
 
 import plotly.subplots as ms
 import plotly.graph_objects as go
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
 def captura_datos (activo,start,period):
     tipo = 0
@@ -213,15 +215,27 @@ def evaluacion (df,pred_size,lags,model,estacionalidad):
         result1 = result
         
     if result[1]<0.05:
-        print("elegimos el residuo del precio de cierre - exp(log est) - p=",result[1])
-        modelo = res_model
-        tsplot (res_model,lags=lags)
-        tipo = 1
+        if estacionalidad:
+            print("El modelo elegido "+str(model)+"_est"+" posee un p=",result[1])
+            modelo = res_model
+            tsplot (res_model,lags=lags)
+            tipo = 1
+        else:
+            print("El modelo elegido "+str(model)+" posee un p=",result[1])
+            modelo = res_model
+            tsplot (res_model,lags=lags)
+            tipo = 1
     elif result1[1]<0.05:
-        print("elegimos el residuo del log precio de cierre - log est - p=",result1[1])
-        modelo = res_log_est
-        tsplot (res_log_est,lags=lags)
-        tipo = 2
+        if estacionalidad:
+            print("El modelo elegido "+str(model)+"_est"+" posee un p=",result1[1])
+            modelo = res_log_est
+            tsplot (res_log_est,lags=lags)
+            tipo = 2
+        else:
+            print("El modelo elegido "+str(model)+" posee un p=",result1[1])
+            modelo = res_log_est
+            tsplot (res_log_est,lags=lags)
+            tipo = 2
     else:
         return print("la serie no es estacionaria, hacer mas diferenciación")
     return (modelo,df_train,df_test,tipo,model)
@@ -276,6 +290,86 @@ def arima (modelo,p,d,q,alpha):
     else:
         modelo[1]['model_ARIMA'] = modelo[1]['model'] + results_ARIMA.fittedvalues
         modelo[2]['model_ARIMA'] = modelo[2]['model'] + predictions_ARIMA
-    modelo[1].plot(kind = "line", y = ['Close', 'model_ARIMA']);
-    modelo[2].plot(kind = "line", y = ['Close', 'model_ARIMA']);
-    
+    return p,q
+
+def eval_models_hyperparameters(modelo,numbers,model_label,alpha):
+    models = pd.DataFrame()
+    models['Close'] = modelo[2]['Close']
+    RMSE = []
+    p_valor = []
+    q_valor = []
+    for p in range(0,numbers):
+        for q in range(0,numbers):
+            try:
+                model_ARIMA = ARIMA(modelo[0], order=(p,0,q))
+                results_ARIMA = model_ARIMA.fit()
+                res_ARIMA =  results_ARIMA.fittedvalues - modelo[0]
+                predictions_ARIMA, se, conf = results_ARIMA.forecast(len(modelo[2]['Close']), alpha=alpha)
+                if modelo[3] == 1 and modelo[4] == 'log':
+                    #models['model_ARIMA'+'_'+model_label] = modelo[1]['back_model_log_est'] + results_ARIMA.fittedvalues
+                    models['model_ARIMA'+'_'+model_label] = modelo[2]['back_model_log_est'] + predictions_ARIMA
+                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                    p_valor.append(p)
+                    q_valor.append(q)
+
+                elif modelo[3] == 2 and modelo[4] == 'log':
+                    #models['model_ARIMA'+'_'+model_label] = np.exp(modelo[1]['model'] + results_ARIMA.fittedvalues)
+                    models['model_ARIMA'+'_'+model_label] = np.exp(modelo[2]['model'] + predictions_ARIMA)
+                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                    p_valor.append(p)
+                    q_valor.append(q)
+
+                else:
+                    #models['model_ARIMA'+'_'+model_label] = modelo[1]['model'] + results_ARIMA.fittedvalues
+                    models['model_ARIMA'+'_'+model_label] = modelo[2]['model'] + predictions_ARIMA
+                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                    p_valor.append(p)
+                    q_valor.append(q)
+            except:
+                continue    
+                
+    return RMSE,p_valor,q_valor,model_label
+
+def dataframe_to_graph(modelo):
+    for i in range(1,3,1):
+        linear_est = pd.DataFrame()
+        quad_est = pd.DataFrame()
+        log_est = pd.DataFrame()
+        linear = pd.DataFrame()
+        quad = pd.DataFrame()
+        log = pd.DataFrame()
+        close = modelo['linear_est'][i].Close
+        try:
+            linear_est['linear_est']= modelo['linear_est'][i].model_ARIMA
+        except:
+            linear_est['linear_est']= np.nan
+        try:
+            quad_est['quad_est']= modelo['quad_est'][i].model_ARIMA
+        except:
+            quad_est['quad_est']= np.nan
+        try:
+            log_est['log_est']= modelo['log_est'][i].model_ARIMA
+        except:
+            log_est['log_est']=np.nan
+        try:
+            linear['linear']= modelo['linear'][i].model_ARIMA
+        except:
+            linear['linear']= np.nan
+        try:
+            quad['quad']= modelo['quad'][i].model_ARIMA
+        except:
+            quad['quad']=np.nan
+        try:
+            log['log']= modelo['log'][i].model_ARIMA
+        except:
+            log['log']= np.nan
+            
+        if i == 1:
+            df_train = pd.concat([close,linear_est,quad_est,log_est,linear,quad,log],axis=1)
+        else:
+            df_test = pd.concat([close,linear_est,quad_est,log_est,linear,quad,log],axis=1)
+            
+    return df_train, df_test
