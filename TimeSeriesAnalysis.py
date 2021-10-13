@@ -130,37 +130,52 @@ def seasonality(df):
     string = 'Aug + Dec + Feb + Jan + Jul + Jun + Mar + May + Nov + Oct + Sep '
     return (df,string)
 
-def eleccion_modelo(model,df,estacionalidad):
+def eleccion_modelo(model,df,estacionalidad,volumen):
     if model == 'linear':
         if estacionalidad:
             df, est = seasonality(df)
-            string = 'Close ~ timeIndex + Volume' + ' + ' + est
+            if volumen:
+                string = 'Close ~ timeIndex + Volume' + ' + ' + est
+                return(df,string)
+            string = 'Close ~ timeIndex' + ' + ' + est
             return(df,string)
-        
-        string = 'Close ~ timeIndex + Volume'
+        if volumen:
+            string = 'Close ~ timeIndex + Volume'
+            return (df,string)
+        string = 'Close ~ timeIndex'
         return (df,string)
     
     elif model == 'quad':
         df["timeIndex_sq"] = df["timeIndex"]**2
         if estacionalidad:
             df, est = seasonality(df)
-            string = 'Close ~ timeIndex + timeIndex_sq + Volume' + ' + ' + est
+            if volumen:
+                string = 'Close ~ timeIndex + timeIndex_sq + Volume' + ' + ' + est
+                return(df,string)
+            string = 'Close ~ timeIndex + timeIndex_sq' + ' + ' + est
             return(df,string)
-        
-        string = 'Close ~ timeIndex + timeIndex_sq + Volume'
+        if volumen:
+            string = 'Close ~ timeIndex + timeIndex_sq + Volume'
+            return(df,string)
+        string = 'Close ~ timeIndex + timeIndex_sq'
         return(df,string)
     
     elif model == 'log':
         df['log_value'] = np.log(df['Close'])
         if estacionalidad:
             df, est = seasonality(df)
-            string = 'log_value ~ timeIndex + Volume' + ' + ' + est
+            if volumen:
+                string = 'log_value ~ timeIndex + Volume' + ' + ' + est
+                return(df,string)
+            string = 'log_value ~ timeIndex' + ' + ' + est
             return(df,string)
-        
-        string = 'log_value ~ timeIndex + Volume'
+        if volumen:
+            string = 'log_value ~ timeIndex + Volume'
+            return(df,string)
+        string = 'log_value ~ timeIndex'
         return(df,string)
     
-def evaluacion (df,pred_size,lags,model,estacionalidad):
+def evaluacion (df,pred_size,lags,model,estacionalidad,volumen):
     tipo = 0
     #start = datetime.datetime.strptime(start,"%Y, %m, %d" )
     #end = datetime.datetime.now()
@@ -168,7 +183,7 @@ def evaluacion (df,pred_size,lags,model,estacionalidad):
     df = df[["Close","Volume"]]
     df["timeIndex"] = pd.Series(np.arange(len(df['Close'])), index=df.index)
     
-    df, string = eleccion_modelo(model=model,df=df,estacionalidad=estacionalidad)
+    df, string = eleccion_modelo(model=model,df=df,estacionalidad=estacionalidad,volumen=volumen)
     
     df_train, df_test = train_test_split(df, test_size=pred_size, random_state=42, shuffle=False)
     
@@ -373,3 +388,27 @@ def dataframe_to_graph(modelo):
             df_test = pd.concat([close,linear_est,quad_est,log_est,linear,quad,log],axis=1)
             
     return df_train, df_test
+
+def graficar_predicciones_arima(data):
+    color = ["blue","green","red","violet","yellow","pink","black"]
+    j=-1
+    fig = ms.make_subplots(rows=1,cols=1)
+    for i in data.columns:
+        if data[i].isnull().sum() != data.shape[0]:
+            j+=1
+            try:
+                fig.add_trace(go.Scatter(x=data.index, 
+                             y=data[i], 
+                             opacity=0.7, 
+                             line=dict(color=color[j], width=1), 
+                             name=i))
+            except:
+                    continue
+    fig.update_layout(title = "Gráfico de Predicciones vs Real",
+    yaxis_title = "($)Precio de Cierre",
+    xaxis_title = "Time",width=910, height=600)
+    fig.update_xaxes(rangeslider=dict(
+            visible=True,
+            #range=(dates[0], dates[-1])
+        ))
+    return(fig.show())
