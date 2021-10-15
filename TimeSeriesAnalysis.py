@@ -249,7 +249,24 @@ def evaluacion (df,pred_size,lags,model,estacionalidad,volumen):
             tsplot (res_log_est,lags=lags)
             tipo = 2
     else:
-        return print("la serie no es estacionaria, hacer mas diferenciación")
+        if model == 'log':
+            if estacionalidad:
+                print("El modelo elegido "+str(model)+"_est"+ " no es estacionario, hacer mas diferenciación")
+                modelo = res_model
+                tipo = 1
+            else:
+                print("El modelo elegido "+str(model)+ " no es estacionario, hacer mas diferenciación")
+                modelo = res_model
+                tipo = 1
+        else:
+            if estacionalidad:
+                print("El modelo elegido "+str(model)+"_est"+ " no es estacionario, hacer mas diferenciación")
+                modelo = res_model
+                tipo = 1
+            else:
+                print("El modelo elegido "+str(model)+ " no es estacionario, hacer mas diferenciación")
+                modelo = res_model
+                tipo = 1
     return (modelo,df_train,df_test,tipo,model)
 
 def tsplot(y, lags=None, figsize=(12, 7), style='bmh'):
@@ -302,7 +319,7 @@ def arima (modelo,p,d,q,alpha):
     else:
         modelo[1]['model_ARIMA'] = modelo[1]['model'] + results_ARIMA.fittedvalues
         modelo[2]['model_ARIMA'] = modelo[2]['model'] + predictions_ARIMA
-    return p,q
+    return p,q,d
 
 def eval_models_hyperparameters(modelo,numbers,model_label,alpha):
     models = pd.DataFrame()
@@ -310,40 +327,45 @@ def eval_models_hyperparameters(modelo,numbers,model_label,alpha):
     RMSE = []
     p_valor = []
     q_valor = []
-    for p in range(0,numbers):
-        for q in range(0,numbers):
-            try:
-                model_ARIMA = ARIMA(modelo[0], order=(p,0,q))
-                results_ARIMA = model_ARIMA.fit()
-                res_ARIMA =  results_ARIMA.fittedvalues - modelo[0]
-                predictions_ARIMA, se, conf = results_ARIMA.forecast(len(modelo[2]['Close']), alpha=alpha)
-                if modelo[3] == 1 and modelo[4] == 'log':
-                    #models['model_ARIMA'+'_'+model_label] = modelo[1]['back_model_log_est'] + results_ARIMA.fittedvalues
-                    models['model_ARIMA'+'_'+model_label] = modelo[2]['back_model_log_est'] + predictions_ARIMA
-                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
-                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
-                    p_valor.append(p)
-                    q_valor.append(q)
+    d_valor = []
+    for d in range(0,numbers):
+        for p in range(0,numbers):
+            for q in range(0,numbers):
+                try:
+                    model_ARIMA = ARIMA(modelo[0], order=(p,d,q))
+                    results_ARIMA = model_ARIMA.fit()
+                    res_ARIMA =  results_ARIMA.fittedvalues - modelo[0]
+                    predictions_ARIMA, se, conf = results_ARIMA.forecast(len(modelo[2]['Close']), alpha=alpha)
+                    if modelo[3] == 1 and modelo[4] == 'log':
+                        #models['model_ARIMA'+'_'+model_label] = modelo[1]['back_model_log_est'] + results_ARIMA.fittedvalues
+                        models['model_ARIMA'+'_'+model_label] = modelo[2]['back_model_log_est'] + predictions_ARIMA
+                        #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                        RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                        p_valor.append(p)
+                        q_valor.append(q)
+                        d_valor.append(d)
 
-                elif modelo[3] == 2 and modelo[4] == 'log':
-                    #models['model_ARIMA'+'_'+model_label] = np.exp(modelo[1]['model'] + results_ARIMA.fittedvalues)
-                    models['model_ARIMA'+'_'+model_label] = np.exp(modelo[2]['model'] + predictions_ARIMA)
-                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
-                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
-                    p_valor.append(p)
-                    q_valor.append(q)
+                    elif modelo[3] == 2 and modelo[4] == 'log':
+                        #models['model_ARIMA'+'_'+model_label] = np.exp(modelo[1]['model'] + results_ARIMA.fittedvalues)
+                        models['model_ARIMA'+'_'+model_label] = np.exp(modelo[2]['model'] + predictions_ARIMA)
+                        #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                        RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                        p_valor.append(p)
+                        q_valor.append(q)
+                        d_valor.append(d)
 
-                else:
-                    #models['model_ARIMA'+'_'+model_label] = modelo[1]['model'] + results_ARIMA.fittedvalues
-                    models['model_ARIMA'+'_'+model_label] = modelo[2]['model'] + predictions_ARIMA
-                    #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
-                    RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
-                    p_valor.append(p)
-                    q_valor.append(q)
-            except:
-                continue    
+                    else:
+                        #models['model_ARIMA'+'_'+model_label] = modelo[1]['model'] + results_ARIMA.fittedvalues
+                        models['model_ARIMA'+'_'+model_label] = modelo[2]['model'] + predictions_ARIMA
+                        #RMSE.append(ts.RMSE(models['model_ARIMA'+'_'+model_label],models.Close))
+                        RMSE.append(sqrt(mean_squared_error(models.Close, models['model_ARIMA'+'_'+model_label])))
+                        p_valor.append(p)
+                        q_valor.append(q)
+                        d_valor.append(d)
+                except:
+                    continue    
                 
-    return RMSE,p_valor,q_valor,model_label
+    return RMSE,p_valor,q_valor,d_valor,model_label
 
 def dataframe_to_graph(modelo):
     for i in range(1,3,1):
