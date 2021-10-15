@@ -353,29 +353,34 @@ def dataframe_to_graph(modelo):
         linear = pd.DataFrame()
         quad = pd.DataFrame()
         log = pd.DataFrame()
-        close = modelo['linear_est'][i].Close
         try:
             linear_est['linear_est']= modelo['linear_est'][i].model_ARIMA
+            close = modelo['linear_est'][i].Close
         except:
             linear_est['linear_est']= np.nan
         try:
             quad_est['quad_est']= modelo['quad_est'][i].model_ARIMA
+            close = modelo['quad_est'][i].Close
         except:
             quad_est['quad_est']= np.nan
         try:
             log_est['log_est']= modelo['log_est'][i].model_ARIMA
+            close = modelo['log_est'][i].Close
         except:
             log_est['log_est']=np.nan
         try:
             linear['linear']= modelo['linear'][i].model_ARIMA
+            close = modelo['linear'][i].Close
         except:
             linear['linear']= np.nan
         try:
             quad['quad']= modelo['quad'][i].model_ARIMA
+            close = modelo['quad'][i].Close
         except:
             quad['quad']=np.nan
         try:
             log['log']= modelo['log'][i].model_ARIMA
+            close = modelo['log'][i].Close
         except:
             log['log']= np.nan
             
