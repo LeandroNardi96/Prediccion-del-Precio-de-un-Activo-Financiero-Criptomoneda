@@ -35,11 +35,11 @@ import plotly.graph_objects as go
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 
-def captura_datos (activo,start,period):
+def captura_datos (activo,start):
     tipo = 0
     start = datetime.datetime.strptime(start,"%Y, %m, %d" )
     end = datetime.datetime.now()
-    df = web.get_data_yahoo(activo, start, end, interval=period)
+    df = web.get_data_yahoo(activo, start, end, interval='m')
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA5'] = df['Close'].rolling(window=5).mean()
     df["timeIndex"] = pd.Series(np.arange(len(df['Close'])), index=df.index)
@@ -177,9 +177,6 @@ def eleccion_modelo(model,df,estacionalidad,volumen):
     
 def evaluacion (df,pred_size,lags,model,estacionalidad,volumen):
     tipo = 0
-    #start = datetime.datetime.strptime(start,"%Y, %m, %d" )
-    #end = datetime.datetime.now()
-    #df = web.get_data_yahoo(activo, start, end, interval="m")
     df = df[["Close","Volume"]]
     df["timeIndex"] = pd.Series(np.arange(len(df['Close'])), index=df.index)
     
