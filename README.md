@@ -4,7 +4,11 @@
 
 El objetivo de este trabajo final consiste en generar un modelo que permita predecir el precio de un activo financiero/criptomoneda de manera general. Es decir, que cualquiera sea el activo o criptomodela elegida, se pueda obtener un análisis estadístico descriptivo de la misma y un modelo de predicción que mejor se ajuste.
 Para ello, se conecta a la API de yahoo finance para obtener información del activo, su fecha de inicio y así poder realizar los análisis y predicción correspondiente.
-En las siguientes notebooks de deja como ejemplo la notebook index (template), y 2 ejemplos de aplicación (Bitcoin y Mc Donalds)
+En las siguientes notebooks de deja como ejemplo:
+- La notebook index (Workshop_final_index), 
+- 2 ejemplos de aplicación:
+  -   Bitcoin (Workshop_final_btc)
+  -   Mc Donalds (Workshop_final_mcd)
 
 ## Líneas futuras de desarollo
 
